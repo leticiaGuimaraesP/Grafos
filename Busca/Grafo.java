@@ -133,11 +133,4 @@ public class Grafo{
         }
         return predecessores;
     }
-
-    public static void main(String[] args){
-        read("graph-test-100.txt");
-        System.out.println(origem.length);
-        System.err.println(origem[0]);
-        System.out.println(destino.length);
-    }
 }
