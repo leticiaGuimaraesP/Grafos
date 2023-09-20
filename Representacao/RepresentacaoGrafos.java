@@ -1,3 +1,4 @@
+package Representacao;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
@@ -5,8 +6,8 @@ import java.util.Scanner;
 public class RepresentacaoGrafos{
     /*Cada posição representa um vertice de origem e nela armazena-se a posição inicial, 
     referente ao array de destino, em que estão localizadas as arestas de destinos (os sucessores)*/
-    private static int[] origem; //array que armazena ponteiros para o array destino
-    private static int[] destino; //array que armazena os sucessores de cada vertice do grafo
+    static int[] origem; //array que armazena ponteiros para o array destino
+    static int[] destino; //array que armazena os sucessores de cada vertice do grafo
 
     public static void read(String arquivo){
         try {
@@ -133,7 +134,7 @@ public class RepresentacaoGrafos{
     }
 
     public static void main(String[] args){
-        read("graph-test-100.txt");
+        read("teste.txt");
         //imprimir();
 
         //(i) grau de saída e conjunto de sucessores para o vértice de maior valor de grau de saída
