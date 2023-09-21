@@ -5,12 +5,12 @@ import java.util.Arrays;
 import java.util.Scanner;
 
 public class BuscaProfundidade {
-    static int tempo = 0;
-    static int vertice = 5;
-    static Grafo grafo;
-    static PropriedadesVertice[] infoV;
-    static ArrayList<String> arestasArvore = new ArrayList<String>();
-    static ArrayList<String> arestasVertice = new ArrayList<String>();
+    static int tempo = 0; //Inicializa o tempo global
+    static int vertice = 0; //Vertice escolhido pelo usuario
+    static Grafo grafo; //Representação do Grafo
+    static PropriedadesVertice[] infoV; //Array com as informacoes relacionadas a busca por profundidade de cada vertice
+    static ArrayList<String> arestasArvore = new ArrayList<String>(); //Array para armazenar as arestas de arvore
+    static ArrayList<String> arestasVertice = new ArrayList<String>(); //Array para armazenar as arestas divergentes do vertice escolhido
 
     public static void main(String[] Args){  
         Scanner leia = new Scanner(System.in);
@@ -22,34 +22,49 @@ public class BuscaProfundidade {
         Grafo.read(arq);
 
         System.out.print("Digite um vertice:");
-        String str = leia.nextLine();
-        vertice = Integer.parseInt(str);
+        //String str = leia.nextLine();
+        //vertice = Integer.parseInt(str);
+        vertice = leia.nextInt();
 
-        int n = grafo.origem.length;
-        ordernarDestino(n);
+        int n = grafo.origem.length; //armazena a quantidade de vertices
+        ordernarDestino(n); //ordena de forma lexicográfica as arestas divergentes de cada vertice
         //int m = grafo.destino.length;
         
+        //inicializa o vetor com as informacoes basicas da busca em profundidade
         infoV = new PropriedadesVertice[n];
         for(int i=0; i<n-1; i++){
             infoV[i] = new PropriedadesVertice();
         }
     
-        int v=1;
+        //inicializa a busca em profundidade com o primeiro vertice
+        int v=1; 
         while(v!=0){
-            buscaEmProfundidade(v);
+            buscaEmProfundidade(v); //metodo recursivo 
+            //verifica se existe algum vertice que nao foi explorado ainda, apos finalizar a recusrividade
             v = faltaVertice(infoV);
         }
 
+        //Imprime todas as arestas de arvore do grafo
+        System.out.println("ARESTAS DE ARVORE");
+        for(int i=0; i<arestasArvore.size(); i++){
+           System.out.println(arestasArvore.get(i));
+        }
+
+        //Imprime todas as arestada divergentes do vertice escolhido
+        System.out.println("ARESTAS DIVERGENTES AO VERTICE " + vertice);
         for(int i=0; i<arestasVertice.size(); i++){
            System.out.println(arestasVertice.get(i));
         }
     }
 
+    //Metodo para encontrar os vertice que ainda nao foram explorados, isso e, tempo de descoberta igual a 0
     public static int faltaVertice(PropriedadesVertice[] array){
         boolean achou = false;
         int vertice = 0;
         for(int i=1; i<array.length-1 && !achou; i++){
-            if(array[i].tempoDescoberta==0){
+            //testa se o tempo de descoberta do vertice e 0
+            if(array[i].getTempoDescoberta()==0){
+                //Se encontrou, retorna o vertice e ablica a busca nele
                 achou = true;
                 vertice = i;
             }
@@ -63,6 +78,8 @@ public class BuscaProfundidade {
             int inicio = grafo.origem[i];
             int fim =  grafo.origem[i+1];
 
+            //A ordenacao nao é feita diretamente em todas as posicoes.
+            //A ordencao e feita em partes, e feita em cada conjunto de arestas divergentes aos vertices
             int[] subArray = Arrays.copyOfRange(grafo.destino, inicio, fim);
             Arrays.sort(subArray); 
             
@@ -75,20 +92,21 @@ public class BuscaProfundidade {
     }
 
     public static void buscaEmProfundidade(int v){
-        System.out.println("Vertice: "+v);
+        //System.out.println("Vertice: "+v);
         
-        tempo++;
-        infoV[v].tempoDescoberta = tempo;
+        tempo++; //atualiza o tempo global
+        infoV[v].setTempoDescoberta(tempo); //define o tempo de descoberta do vertice
 
+        //define quais são as posições iniciais e finais do array de destino do vertice 
         int posInicial = grafo.origem[v];
         int posFinal = grafo.origem[v+1];
 
-        
+        //para todo vizinho do vertice
         for(int i=posInicial; i<posFinal; i++){
             int w = grafo.destino[i];
-            //ARESTA ARVORE
-            if(infoV[w].tempoDescoberta==0){
-                //System.out.println("Arvore: "+v+" "+w);
+            
+            if(infoV[w].getTempoDescoberta()==0){
+                //aresta de arvore
                 String aresta = "Aresta Arvore: ";
                 aresta += String.valueOf(v) +" - "+ String.valueOf(w);
                 arestasArvore.add(aresta);
@@ -97,42 +115,41 @@ public class BuscaProfundidade {
                     arestasVertice.add(aresta);
                 }
 
-                //aresta de arvore
-                infoV[w].pai = v;
-                buscaEmProfundidade(w);
+                infoV[w].setPai(v); //define o pai do vertice
+                buscaEmProfundidade(w); //aplica a busca no vertice
             }else{
-                //ARESTA DE RETORNO
-                if(infoV[w].tempoTermino==0){
+                if(infoV[w].gettempoTermino()==0){
                     //aresta de retorno                    
-                    if(v==vertice){
+                    if(v==vertice){ //se o vertice analisado for o vertice escolhido anteriormente pelo usuário
                         String aresta = "Aresta de Retorno: ";
                         aresta += String.valueOf(v) +" - "+ String.valueOf(w);
-                        arestasVertice.add(aresta);
+                        arestasVertice.add(aresta); //armazena a aresta divergente
                     }
-                }else if(infoV[v].tempoDescoberta<infoV[w].tempoDescoberta){
+                }else if(infoV[v].getTempoDescoberta()<infoV[w].getTempoDescoberta()){
                     //aresta de avanço
-                    if(v==vertice){
+                    if(v==vertice){ //se o vertice analisado for o vertice escolhido anteriormente pelo usuário
                         String aresta = "Aresta de Avanco: ";
                         aresta += String.valueOf(v) +" - "+ String.valueOf(w);
-                        arestasVertice.add(aresta);
+                        arestasVertice.add(aresta); //armazena a aresta divergente
                     }
                 }else{
                     //aresta de cruzamento
-                    if(v==vertice){
+                    if(v==vertice){ //se o vertice analisado for o vertice escolhido anteriormente pelo usuário
                         String aresta = "Aresta de Cruzamento: ";
                         aresta += String.valueOf(v) +" - "+ String.valueOf(w);
-                        arestasVertice.add(aresta);
+                        arestasVertice.add(aresta); //armazena a aresta divergente
                     }
                 }
             }
         }
         tempo++;
-        infoV[v].tempoTermino = tempo;   
+        infoV[v].settempoTermino(tempo);   
     }
 }
 
+//Classe para armazenar as informações a respeito da busca em profundidade
 class PropriedadesVertice{
-    int tempoDescoberta, tempoTermino, pai;
+    private int tempoDescoberta, tempoTermino, pai;
 
     PropriedadesVertice(){
         tempoDescoberta = 0;
