@@ -1,5 +1,3 @@
-package ProblemaDoTransporte;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -14,6 +12,8 @@ class DualMatrixTransport {
     static int matrix[][];
     static ArrayList<Integer> offer = new ArrayList<Integer>();
     static ArrayList<Integer> demand = new ArrayList<Integer>();
+    static boolean unbalanced;
+    static int[] posValue = new int[2];
 
     public static void read(String arquivo) {
         try {
@@ -29,16 +29,29 @@ class DualMatrixTransport {
             int n = Integer.parseInt(array[1]);
             int tam = m + n;
 
+             int totalOffer=0, totalDemand=0;
             for (int i = 0; i < tam; i++) {
                 data = sc.nextLine();
                 // Testa se é oferta ou demanda
                 if (i < m) {
                     offer.add(Integer.parseInt(data));
+                    totalOffer += Integer.parseInt(data);
                 } else {
                     demand.add(Integer.parseInt(data));
+                    totalDemand += Integer.parseInt(data);
                 }
 
             }
+
+            //Correção - caso oferta != demanda
+            unbalanced = false;
+            if(totalOffer!=totalDemand){
+                unbalanced = true;
+                int difference = totalDemand - totalOffer;
+                offer.add(difference);
+                m++;
+            }
+
 
             // m -> linha (oferta)
             // n -> coluna (linha)
@@ -47,21 +60,27 @@ class DualMatrixTransport {
             matrix = new int[m][n];
 
             for (int i = 0; i < m; i++) {
-                data = sc.nextLine();
-                String[] aux = data.split("\\s+");
-                for (int x = 0; x < aux.length; x++) {
-                    costMatrix[i][x] = Integer.parseInt(aux[x]);
-                    matrix[i][x] = 0;
+                if(i==(m-1)&&unbalanced){
+                    for (int x = 0; x < n; x++) {
+                        costMatrix[i][x] = 0;
+                        matrix[i][x] = 0;
+                    }
+                }else{
+                    data = sc.nextLine();
+                    String[] aux = data.split("\\s+");
+                    for (int x = 0; x < aux.length; x++) {
+                        costMatrix[i][x] = Integer.parseInt(aux[x]);
+                        matrix[i][x] = 0;
+                    }
                 }
             }
 
-            // Matriz
-            for (int i = 0; i < m; i++) {
-                for (int x = 0; x < n; x++) {
-                    System.out.print(costMatrix[i][x] + " ");
-                }
-                System.out.println();
-            }
+            // for (int i = 0; i < m; i++) {
+            //     for (int x = 0; x < n; x++) {
+            //         System.out.print(costMatrix[i][x] + " ");
+            //     }
+            //     System.out.println();
+            // }
 
             sc.close();
         } catch (FileNotFoundException e) {
@@ -109,18 +128,22 @@ class DualMatrixTransport {
 
         }
 
-        // Matriz
-        System.out.println("Fluxo Matriz");
-        for (i = 0; i < offer.size(); i++) {
-            for (int x = 0; x < demand.size(); x++) {
-                System.out.print(matrix[i][x] + " ");
-            }
-            System.out.println();
-        }
+        // System.out.println("Fluxo Matriz");
+        // for (i = 0; i < offer.size(); i++) {
+        //     for (int x = 0; x < demand.size(); x++) {
+        //         System.out.print(matrix[i][x] + " ");
+        //     }
+        //     System.out.println();
+        // }
 
         boolean recalcular = true;
-        ;
+        int cont=0;
+        posValue[0] = posValue[1] = -1;
+
         do {
+            //cont++;
+            //System.out.println("Recalculou");
+            
             recalcular = formRelativeCostMatrix();
         } while (recalcular);
 
@@ -136,8 +159,7 @@ class DualMatrixTransport {
         int u = 0, v = 0;
 
         // Forma a Matriz de Custo relativo
-        // Demanda x Oferta - calcula os valores para a linha da demanda e a coluna da
-        // oferta
+        // Demanda x Oferta - calcula os valores para a linha da demanda e a coluna da oferta
         for (int i = offer.size() - 1; i >= 0; i--) {
             for (int j = demand.size() - 1; j >= 0; j--) {
                 if (matrix[i][j] != 0) {
@@ -155,8 +177,24 @@ class DualMatrixTransport {
                         relativeCostMatrix[i][demand.size()] = u;
                     }
                 } else {
-                    relativeCostMatrix[i][j] = -1;
+                    if(posValue[0]!=-1 && posValue[0]==i && posValue[1]==j){ //Caso haja um elemento 0 que precisa ser levado em consideração
+                        System.out.println(posValue[0]+" "+posValue[1]+" -> "+ relativeCostMatrix[i][j]);
+                        v = relativeCostMatrix[offer.size()][j]; // m -> oferta -> linha = 2
+                        u = relativeCostMatrix[i][demand.size()]; // n -> demanda -> coluna = 3
 
+                        if (v != 0) {
+                            u = costMatrix[i][j] - v;
+                            relativeCostMatrix[i][demand.size()] = u;
+                        } else if (u != 0) {
+                            v = costMatrix[i][j] - u;
+                            relativeCostMatrix[offer.size()][j] = v;
+                        } else {
+                            u = costMatrix[i][j] - v;
+                            relativeCostMatrix[i][demand.size()] = u;
+                        }
+                    }else{
+                        relativeCostMatrix[i][j] = -1;
+                    }
                 }
             }
 
@@ -172,9 +210,10 @@ class DualMatrixTransport {
             }
 
             int solBasica = offer.size() + demand.size() - 1;
-            System.out.println(cont + " " + solBasica);
+            //System.out.println(cont + " " + solBasica);
             if (cont != solBasica) {
                 if (matrix[offer.size() - 1][demand.size() - 1] != 0) {
+
                     if (matrix[offer.size() - 1][demand.size() - 2] == 0) {
                         // matrix[offer.size()-1][demand.size()-2]=0;
                         relativeCostMatrix[offer.size() - 1][demand.size() - 2] = 0;
@@ -182,12 +221,21 @@ class DualMatrixTransport {
                         relativeCostMatrix[offer.size() - 1][demand.size() - 2] = 0;
                     }
                 }
+                // if(posValue[0]!=-1){
+                //     relativeCostMatrix[posValue[0]][posValue[1]] = 0;
+                //     System.out.println(relativeCostMatrix[posValue[0]][posValue[1]]);
+                //     System.out.println("RECEBEU 0" + posValue[0] +" "+ posValue[1]);
+                // }
             }
         }
+
+
 
         // Valores não basicos - calcula e procura por números negativos
         boolean negativo = false;
         int posI = 0, posJ = 0;
+        int gargaloI = 0, gargaloJ = 0;
+
         for (int i = 0; i < offer.size(); i++) {
             for (int j = 0; j < demand.size(); j++) {
                 if (relativeCostMatrix[i][j] != 0) { // 0 -> base da matriz
@@ -195,23 +243,30 @@ class DualMatrixTransport {
                     u = relativeCostMatrix[i][demand.size()];
 
                     int value = costMatrix[i][j] - (u + v);
-                    if (value < 0) {
+
+                    if(unbalanced && i==offer.size()-1){
+                        relativeCostMatrix[i][j] = value * (-1);
+
+                    }else if (value < 0) {
                         negativo = true;
                         posI = i;
                         posJ = j;
+                        relativeCostMatrix[i][j] = value;
+                    }else{
+                        relativeCostMatrix[i][j] = value;
                     }
-                    relativeCostMatrix[i][j] = value;
+
                 }
             }
         }
 
-        System.out.println("Custo Relativo");
-        for (int i = 0; i <= offer.size(); i++) {
-            for (int x = 0; x <= demand.size(); x++) {
-                System.out.print(relativeCostMatrix[i][x] + " ");
-            }
-            System.out.println();
-        }
+
+        // for (int i = 0; i <= offer.size(); i++) {
+        //     for (int x = 0; x <= demand.size(); x++) {
+        //         System.out.print(relativeCostMatrix[i][x] + " ");
+        //     }
+        //     System.out.println();
+        // }
 
         if (negativo) {
             boolean acabou = false;
@@ -220,6 +275,7 @@ class DualMatrixTransport {
 
             quadrados[0][0] = posI;
             quadrados[0][1] = posJ;
+            //System.out.println(posI +" QUADRADOS "+posJ);
 
             for (int i = 0; i < offer.size() && !acabou; i++) { // 0, 1
                 if (matrix[i][posJ] != 0) {
@@ -240,8 +296,12 @@ class DualMatrixTransport {
 
                                 if (matrix[i][posJ] < matrix[posI][j]) {
                                     min = matrix[i][posJ];
+                                    gargaloI = i;
+                                    gargaloJ = posJ;
                                 } else {
                                     min = matrix[posI][j];
+                                    gargaloI = posI;
+                                    gargaloJ = j;
                                 }
 
                             }
@@ -250,12 +310,12 @@ class DualMatrixTransport {
                 }
             }
 
+            // System.out.println("QUADRADOS");
             // for(int i=0; i<4; i++){
-            // for(int x=0; x<2; x++){
-
-            // System.out.print(quadrados[i][x]+" ");
-            // }
-            // System.out.println();
+            //     for(int x=0; x<2; x++){
+            //         System.out.print(quadrados[i][x]+" ");
+            //     }
+            //     System.out.println();
             // }
             // System.out.println(min);
 
@@ -267,20 +327,24 @@ class DualMatrixTransport {
                     matrix[aux1][aux2] = matrix[aux1][aux2] + min;
                 } else {
                     matrix[aux1][aux2] = matrix[aux1][aux2] - min;
+                    if(aux1!=gargaloI && aux2!=gargaloJ && matrix[aux1][aux2]==0){
+                        System.out.println("entrou");
+                        posValue[0] = aux1;
+                        posValue[1] = aux2;
+                    }
                 }
             }
-
-            // Matriz
-            System.out.println("Fluxo Matriz");
-            for (int i = 0; i < offer.size(); i++) {
-                for (int x = 0; x < demand.size(); x++) {
-                    System.out.print(matrix[i][x] + " ");
-                }
-                System.out.println();
-            }
+            
+            // System.out.println("Fluxo Matriz");
+            // for (int i = 0; i < offer.size(); i++) {
+            //     for (int x = 0; x < demand.size(); x++) {
+            //         System.out.print(matrix[i][x] + " ");
+            //     }
+            //     System.out.println();
+            // }
 
         } else {
-            System.out.println("Acabou");
+            //System.out.println("Acabou");
         }
         return negativo;
     }
@@ -292,13 +356,12 @@ class DualMatrixTransport {
                 value += costMatrix[i][j] * matrix[i][j];
             }
         }
-        System.out.println(value);
+        System.out.println("Custo total de transporte: "+value);
     }
 
     public static void main(String[] args) throws java.lang.Exception {
         long startTime = System.currentTimeMillis();
 
-        // read("teste1.txt");
         read("teste2.txt");
         findDualMatrixTransport();
         calculateTotalValue();
